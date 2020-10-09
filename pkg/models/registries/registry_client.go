@@ -1,3 +1,19 @@
+/*
+Copyright 2020 KubeSphere Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package registries
 
 import (
@@ -64,7 +80,7 @@ type authService struct {
 	Scope   []string
 }
 
-func CreateRegistryClient(username, password, domain string) (*Registry, error) {
+func CreateRegistryClient(username, password, domain string, useSSL bool) (*Registry, error) {
 	authDomain := domain
 	auth, err := GetAuthConfig(username, password, authDomain)
 	if err != nil {
@@ -75,6 +91,7 @@ func CreateRegistryClient(username, password, domain string) (*Registry, error) 
 	// Create the registry client.
 	return New(auth, RegistryOpt{
 		Domain: domain,
+		UseSSL: useSSL,
 	})
 }
 
@@ -132,7 +149,7 @@ func newFromTransport(auth types.AuthConfig, opt RegistryOpt) (*Registry, error)
 	return registry, nil
 }
 
-// url returns a registry URL with the passed arguements concatenated.
+// url returns a registry URL with the passed arguments concatenated.
 func (r *Registry) url(pathTemplate string, args ...interface{}) string {
 	pathSuffix := fmt.Sprintf(pathTemplate, args...)
 	url := fmt.Sprintf("%s%s", r.URL, pathSuffix)

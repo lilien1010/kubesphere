@@ -1,10 +1,28 @@
+/*
+Copyright 2020 KubeSphere Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package registries
 
 import (
 	"fmt"
-
 	"github.com/docker/distribution/reference"
-	digest "github.com/opencontainers/go-digest"
+	"github.com/opencontainers/go-digest"
+	log "k8s.io/klog"
+	"net/url"
+	"strings"
 )
 
 // Image holds information about an image.
@@ -30,9 +48,28 @@ func (i *Image) Reference() string {
 	return i.Tag
 }
 
+type DockerURL struct {
+	*url.URL
+}
+
+func (u *DockerURL) StringWithoutScheme() string {
+	u.Scheme = ""
+	s := u.String()
+	return strings.Trim(s, "//")
+}
+
+func ParseDockerURL(rawurl string) (*DockerURL, error) {
+	url, err := url.Parse(rawurl)
+	if err != nil {
+		log.Errorf("%+v", err)
+		return nil, err
+	}
+	return &DockerURL{URL: url}, nil
+}
+
 // ParseImage returns an Image struct with all the values filled in for a given image.
 // example : localhost:5000/nginx:latest, nginx:perl etc.
-func ParseImage(image string) (Image, error) {
+func ParseImage(image string) (i Image, err error) {
 	// Parse the image name and tag.
 	named, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
@@ -41,7 +78,7 @@ func ParseImage(image string) (Image, error) {
 	// Add the latest lag if they did not provide one.
 	named = reference.TagNameOnly(named)
 
-	i := Image{
+	i = Image{
 		named:  named,
 		Domain: reference.Domain(named),
 		Path:   reference.Path(named),
